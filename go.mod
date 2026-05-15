@@ -1,4 +1,4 @@
-module github.com/yourusername/devlog
+module log-work
 
 go 1.26.1
 
