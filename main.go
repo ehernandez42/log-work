@@ -30,7 +30,12 @@ type SessionSummary struct {
 	ToolsUsed         map[string]bool
 }
 
+type CodexRecord struct {
+	//enter here..
+}
+
 func main() {
+
 	rootCmd := &cobra.Command{
 		Use:   "log-work",
 		Short: "Ingest today's Claude Code sessions into a local work log",
