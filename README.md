@@ -1,29 +1,118 @@
 # log-work
 
-A simple CLI tool that will take your work, via commits and coding agent sessions, and parse it out to a text file for you to store as part of 
-your deliverables.
+A CLI tool that ingests today's coding agent sessions and git commits into a local work-log markdown file — useful as a deliverable or for Obsidian vaults.
+
+## What it does
+
+`log-work` auto-discovers today's session files from Claude Code, Codex, and Pi from their default local paths. It also reads today's commits from the current git repository (including truncated diff snippets). The generated markdown includes a status table per source and appends new non-duplicate sessions/commits under a new run section when the log already exists for today.
+
+## Installation
+
+**Prerequisites:** Go 1.21+
+
+### Linux / WSL
+
+```sh
+./build.sh
+```
+
+Builds `dist/log-work-linux-amd64` and `dist/log-work.exe`, then installs the Linux binary to `~/.local/bin/log-work`. Override the install directory:
+
+```sh
+INSTALL_DIR=/usr/local/bin ./build.sh
+```
+
+If `~/.local/bin` is not in your PATH, add to your shell profile:
+
+```sh
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+### Windows (PowerShell)
+
+```powershell
+.\build.ps1
+```
+
+Builds both binaries, installs `dist/log-work.exe` to `%USERPROFILE%\bin`, and adds that directory to your user PATH. If WSL is available it also installs the Linux binary to `~/.local/bin/log-work` inside WSL.
+
+Open a new terminal window after running so PATH changes take effect.
 
 ## Usage
 
-By default, `log-work` auto-detects today's Claude Code, Codex, and Pi session files from known local locations. It also reads today's commits from the current git repository, so a work log can still be created when no agent sessions ran.
+Run from inside any git repository:
 
-The generated markdown includes a status table for each source, and the CLI prints the same status summary while running. If today's work-log file already exists, new non-duplicate sessions and commits are appended under a new run section instead of overwriting the file.
-
-Git commits include truncated diff snippets so the log captures what changed without writing full patches into your vault.
-
-Use `--vault` to choose the Obsidian vault for a single run:
-
-```powershell
-log-work --vault "C:\\Users\\you\\Documents\\ObsidianVault"
+```sh
+log-work
 ```
 
-The `--vault` argument overrides `OBSIDIAN_VAULT`.
+By default the log is written to `work-log-YYYY-MM-DD.md` in the current directory.
 
-If `OBSIDIAN_VAULT` is set, the log is written there:
+### Write to an Obsidian vault
 
-```powershell
-$env:OBSIDIAN_VAULT = "C:\\Users\\you\\Documents\\ObsidianVault"
-go run .
+Pass `--vault` for a single run:
+
+```sh
+log-work --vault "/path/to/ObsidianVault"
 ```
 
-Without `OBSIDIAN_VAULT`, the log is written to the current directory.
+Or set the environment variable so every run goes there:
+
+```sh
+export OBSIDIAN_VAULT="/path/to/ObsidianVault"
+log-work
+```
+
+On Windows:
+
+```powershell
+$env:OBSIDIAN_VAULT = "C:\Users\you\Documents\ObsidianVault"
+log-work
+```
+
+`--vault` takes precedence over `OBSIDIAN_VAULT`.
+
+## Session sources
+
+| Source | Default path |
+| --- | --- |
+| Claude Code | `~/.claude/projects/` |
+| Codex | `~/.codex/`, `%LOCALAPPDATA%\codex`, `%APPDATA%\codex` |
+| Pi | `~/.pi/`, `%LOCALAPPDATA%\pi`, `%APPDATA%\pi` |
+| Git Commits | current working directory repository |
+
+Sources that are not found are marked **Missing** in the status table rather than causing an error.
+
+## Output
+
+Each run produces (or appends to) a markdown file structured like:
+
+```
+# Work Log - 2026-05-19
+
+## Status
+| Source       | Status     |
+| ---          | ---        |
+| Claude Code  | 3 sessions |
+| Git Commits  | 2 commits  |
+
+## Claude Code Sessions
+### Session: `abc123.jsonl`
+#### User Requests
+- ...
+#### Assistant Work
+- ...
+#### Tools Used
+- `Edit`
+
+## Git Commits
+### `a1b2c3d` fix: handle empty vault path
+- Author: Jane Dev
+- Time: 2026-05-19T10:30:00-05:00
+
+```diff
+...
+```
+```
+
+Running `log-work` a second time on the same day appends a `## Run - HH:MM:SS` section with only the new sessions and commits.
