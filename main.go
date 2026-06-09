@@ -87,15 +87,17 @@ var runGitShow = func(hash string) (string, error) {
 
 func main() {
 	var vaultPath string
+	var desiredDate string
 
 	rootCmd := &cobra.Command{
 		Use:   "log-work",
 		Short: "Ingest today's coding agent sessions and git commits into a local work log",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runLogWork(vaultPath)
+			return runLogWork(vaultPath, desiredDate)
 		},
 	}
 	rootCmd.Flags().StringVar(&vaultPath, "vault", "", "Obsidian vault path to write the work log to; overrides OBSIDIAN_VAULT")
+	rootCmd.Flags().StringVar(&desiredDate, "date", "", "The desired date you want to scan your work done; if left blank the scan for today")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println("Error:", err)
@@ -103,8 +105,18 @@ func main() {
 	}
 }
 
-func runLogWork(vaultPath string) error {
-	today := time.Now().Format("2006-01-02")
+func runLogWork(vaultPath string, desiredDate string) error {
+	var date string
+	if desiredDate != "" {
+		t, err := time.Parse("2006-01-02", desiredDate)
+		if err != nil {
+			return err
+		}
+		date = t.Format("2006-01-02")
+	} else {
+		date = time.Now().Format("2006-01-02")
+	}
+	
 
 	summaries, counts, statuses := collectTodaySummaries(defaultSources(), func(msg string) {
 		fmt.Println(msg)
@@ -117,8 +129,8 @@ func runLogWork(vaultPath string) error {
 		return nil
 	}
 
-	outputFile := resolveOutputFile(today, vaultPath)
-	if err := writeMarkdownLog(outputFile, today, summaries, statuses); err != nil {
+	outputFile := resolveOutputFile(date, vaultPath)
+	if err := writeMarkdownLog(outputFile, date, summaries, statuses); err != nil {
 		return err
 	}
 
